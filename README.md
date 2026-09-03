@@ -14,7 +14,6 @@
 
 ## 🚀 Live Demo & Video Pitch
 - **Live Canvas Application:** [https://graphweave-app.vercel.app](https://graphweave-app.vercel.app)
-- **Production Alias:** [https://graphweave-mbo2wbmzn-sujeendrans-projects.vercel.app](https://graphweave-mbo2wbmzn-sujeendrans-projects.vercel.app)
 - **Demo Video:** Included in Devpost submission (3-minute pitch demonstrating autonomous architecture generation and STRIDE threat healing).
 
 ---
