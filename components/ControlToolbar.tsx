@@ -16,8 +16,11 @@ import {
   Layers,
   Database,
   Cpu,
+  Upload,
+  Download,
 } from 'lucide-react';
 import { NodeSpawnerModal } from './NodeSpawnerModal';
+import { ImportTopologyModal } from './ImportTopologyModal';
 
 interface ControlToolbarProps {
   onRunSimulation: () => void;
@@ -37,14 +40,30 @@ export function ControlToolbar({
     clearCanvas,
     loadPreset,
     getTopologySnapshot,
+    exportTopology,
   } = useCanvasStore();
 
   const [isSpawnerOpen, setIsSpawnerOpen] = useState(false);
   const [isPresetsOpen, setIsPresetsOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   const snapshot = getTopologySnapshot();
-  const { criticalRisks, warningRisks, securityScore } = snapshot.metrics;
-  const totalThreats = criticalRisks + warningRisks;
+  const { criticalRisks, warningRisks, securityScore, unsecuredEdges } = snapshot.metrics;
+  const totalThreats = criticalRisks + warningRisks + (unsecuredEdges || 0);
+
+  const handleExportJson = () => {
+    const data = exportTopology();
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `graphweave-topology-${Date.now().toString(36)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <>
@@ -185,6 +204,26 @@ export function ControlToolbar({
             <span className="hidden sm:inline">Auto-Layout</span>
           </button>
 
+          {/* Import Topology */}
+          <button
+            onClick={() => setIsImportOpen(true)}
+            title="Import topology from JSON file or manifest"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-200 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 transition active:scale-98"
+          >
+            <Upload className="w-3.5 h-3.5 text-zinc-400" />
+            <span className="hidden md:inline">Import</span>
+          </button>
+
+          {/* Export Topology */}
+          <button
+            onClick={handleExportJson}
+            title="Export architecture topology to JSON file"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-200 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 transition active:scale-98"
+          >
+            <Download className="w-3.5 h-3.5 text-zinc-400" />
+            <span className="hidden md:inline">Export</span>
+          </button>
+
           {/* WebMCP Topology JSON Snapshot Inspector */}
           <button
             onClick={onOpenTopology}
@@ -194,19 +233,40 @@ export function ControlToolbar({
             <Code2 className="w-4 h-4" />
           </button>
 
-          {/* Simulate Agentic Run (Hero Action) */}
-          <button
-            onClick={onRunSimulation}
-            disabled={isSimulating}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95 shadow-sm ${
-              isSimulating
-                ? 'bg-zinc-800 cursor-not-allowed text-zinc-400 border border-zinc-700'
-                : 'bg-zinc-100 hover:bg-white text-zinc-950 font-semibold shadow-zinc-900/20'
-            }`}
-          >
-            <Sparkles className={`w-3.5 h-3.5 ${isSimulating ? 'animate-spin text-zinc-400' : 'text-zinc-950'}`} />
-            <span>{isSimulating ? 'Agent Executing...' : 'Simulate Agentic Run'}</span>
-          </button>
+          {/* Simulate Agentic Run (Hero Action with Rich Tooltip) */}
+          <div className="relative group/sim">
+            <button
+              onClick={onRunSimulation}
+              disabled={isSimulating}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95 shadow-sm ${
+                isSimulating
+                  ? 'bg-zinc-800 cursor-not-allowed text-zinc-400 border border-zinc-700'
+                  : 'bg-zinc-100 hover:bg-white text-zinc-950 font-semibold shadow-zinc-900/20'
+              }`}
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${isSimulating ? 'animate-spin text-zinc-400' : 'text-zinc-950'}`} />
+              <span>{isSimulating ? 'Agent Executing...' : 'Simulate Agentic Run'}</span>
+            </button>
+
+            {/* Rich Explanatory Tooltip for Users & Hackathon Judges */}
+            <div className="pointer-events-none absolute right-0 top-full mt-2 w-80 opacity-0 group-hover/sim:opacity-100 transition-all duration-200 translate-y-1 group-hover/sim:translate-y-0 z-50">
+              <div className="p-3 rounded-xl bg-zinc-900/98 border border-zinc-700/80 shadow-2xl shadow-black/80 backdrop-blur-xl text-left">
+                <div className="flex items-center gap-1.5 text-zinc-100 text-xs font-semibold pb-1.5 border-b border-zinc-800">
+                  <Sparkles className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
+                  <span>What is &ldquo;Simulate Agentic Run&rdquo;?</span>
+                </div>
+                <p className="text-[11px] text-zinc-300 leading-relaxed mt-2 font-normal">
+                  Simulates what happens when a user instructs an AI agent via <strong className="text-white font-medium">W3C WebMCP</strong>:
+                </p>
+                <div className="mt-1.5 p-2 rounded-lg bg-zinc-950/80 border border-zinc-800 font-mono text-[10.5px] text-sky-300 leading-normal">
+                  &ldquo;Design a secure PCI-DSS e-commerce backend with zero plaintext channels, database failover, and high-throughput caching.&rdquo;
+                </div>
+                <p className="text-[10.5px] text-zinc-400 leading-normal mt-2">
+                  The agent dynamically provisions nodes, listens to the <strong className="text-zinc-300">Architecture Linter</strong> (<span className="font-mono text-zinc-300">canvas://audit-report</span>), and autonomously self-heals SPOFs, transport encryption, and bottlenecks using WebMCP tools.
+                </p>
+              </div>
+            </div>
+          </div>
 
           {/* Reset Canvas */}
           <button
@@ -223,6 +283,12 @@ export function ControlToolbar({
       <NodeSpawnerModal
         isOpen={isSpawnerOpen}
         onClose={() => setIsSpawnerOpen(false)}
+      />
+
+      {/* Import Topology Modal */}
+      <ImportTopologyModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
       />
     </>
   );

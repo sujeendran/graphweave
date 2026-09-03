@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Trash2,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import { ServiceNodeData, useCanvasStore } from '@/store/useCanvasStore';
 
@@ -26,30 +27,33 @@ const iconMap = {
   storage: HardDrive,
 };
 
-const tierColors = {
-  edge: 'text-zinc-300 border-zinc-700/70 bg-zinc-800/60',
-  application: 'text-sky-300 border-sky-800/60 bg-sky-950/40',
-  persistence: 'text-emerald-300 border-emerald-800/60 bg-emerald-950/40',
-};
-
 const threatStyles = {
   none: 'border-zinc-800/90 bg-zinc-900/95 hover:border-zinc-700 shadow-md shadow-black/40',
-  low: 'border-sky-700/80 bg-zinc-900/95 shadow-md shadow-sky-950/20 ring-1 ring-sky-500/30',
-  medium: 'border-amber-600/80 bg-zinc-900/95 shadow-md shadow-amber-950/20 ring-1 ring-amber-500/30',
-  critical:
-    'border-rose-600/90 bg-zinc-900/95 shadow-lg shadow-rose-950/30 ring-1 ring-rose-500/40',
+  info: 'border-zinc-700 bg-zinc-900/95 shadow-md shadow-black/40',
+  warning: 'border-amber-600/80 bg-zinc-900/95 shadow-md shadow-amber-950/20 ring-1 ring-amber-500/30',
+  critical: 'border-rose-600/90 bg-zinc-900/95 shadow-lg shadow-rose-950/30 ring-1 ring-rose-500/40',
 };
 
 export const CustomServiceNode = memo(({ id, data, selected }: NodeProps<Node<ServiceNodeData>>) => {
-  const { resolveThreat, removeNode, setSelectedNodeId } = useCanvasStore();
+  const { getAuditReport, applyQuickFix, removeNode, setSelectedNodeId } = useCanvasStore();
   const Icon = iconMap[data.type] || Cpu;
-  const isThreatened = data.threatLevel && data.threatLevel !== 'none';
+
+  // Derive live real-time violation from architecture rules engine
+  const report = getAuditReport();
+  const nodeViolations = report.violations.filter((v) => v.nodeIds.includes(id));
+  const severityWeight: Record<string, number> = { critical: 3, warning: 2, info: 1 };
+  const activeViolation = nodeViolations.sort(
+    (a, b) => (severityWeight[b.severity] || 0) - (severityWeight[a.severity] || 0)
+  )[0];
+
+  const severity = activeViolation ? activeViolation.severity : 'none';
+  const isThreatened = severity !== 'none';
 
   return (
     <div
       onClick={() => setSelectedNodeId(id)}
-      className={`group relative min-w-[245px] max-w-[285px] p-3.5 rounded-xl border transition-all duration-150 backdrop-blur-md cursor-pointer ${
-        threatStyles[data.threatLevel || 'none']
+      className={`group relative min-w-[250px] max-w-[290px] p-3.5 rounded-xl border transition-all duration-150 backdrop-blur-md cursor-pointer ${
+        threatStyles[severity as keyof typeof threatStyles] || threatStyles.none
       } ${selected ? 'ring-2 ring-zinc-300 border-zinc-300' : ''}`}
     >
       {/* React Flow Handles */}
@@ -64,9 +68,9 @@ export const CustomServiceNode = memo(({ id, data, selected }: NodeProps<Node<Se
         <div className="flex items-center gap-2.5 min-w-0">
           <div
             className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border ${
-              isThreatened && data.threatLevel === 'critical'
+              severity === 'critical'
                 ? 'bg-rose-950/40 border-rose-700/60 text-rose-400'
-                : isThreatened && data.threatLevel === 'medium'
+                : severity === 'warning'
                 ? 'bg-amber-950/40 border-amber-700/60 text-amber-400'
                 : 'bg-zinc-800/80 border-zinc-700/70 text-zinc-300'
             }`}
@@ -103,47 +107,50 @@ export const CustomServiceNode = memo(({ id, data, selected }: NodeProps<Node<Se
         </button>
       </div>
 
-      {/* Threat Status & Remediation Banner */}
+      {/* Real-Time Violation & 1-Click Quick Fix Banner */}
       {isThreatened ? (
         <div
           className={`mt-3 pt-2.5 border-t flex flex-col gap-1.5 text-xs ${
-            data.threatLevel === 'critical'
+            severity === 'critical'
               ? 'border-rose-900/40 text-rose-300'
               : 'border-amber-900/40 text-amber-300'
           }`}
         >
-          <div className="flex items-center justify-between font-medium">
-            <span className="flex items-center gap-1.5 text-xs">
-              {data.threatLevel === 'critical' ? (
-                <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+          <div className="flex items-center justify-between font-medium gap-2">
+            <span className="flex items-center gap-1.5 text-xs truncate">
+              {severity === 'critical' ? (
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
               ) : (
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
               )}
-              {data.category || 'Vulnerability'}
+              <span className="truncate">{activeViolation?.category || data.category || 'Vulnerability'}</span>
             </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                resolveThreat(id);
-              }}
-              title="Auto-remediate vulnerability"
-              className="text-xs bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/40 px-2 py-0.5 rounded-md flex items-center gap-1 transition shadow-sm font-medium"
-            >
-              <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Remediate
-            </button>
+
+            {activeViolation?.quickFix && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  applyQuickFix(activeViolation.id);
+                }}
+                title={activeViolation.quickFix.label}
+                className="text-[11px] bg-zinc-100 hover:bg-white text-zinc-950 px-2 py-0.5 rounded-md flex items-center gap-1 transition shadow-sm font-semibold flex-shrink-0 active:scale-95"
+              >
+                <Sparkles className="w-3 h-3 text-zinc-950" />
+                <span>{activeViolation.quickFix.label}</span>
+              </button>
+            )}
           </div>
-          {data.threatDescription && (
-            <p className="text-zinc-300 text-xs leading-relaxed line-clamp-2 font-normal">
-              {data.threatDescription}
-            </p>
-          )}
+
+          <p className="text-zinc-300 text-[11px] leading-relaxed line-clamp-2 font-normal">
+            {activeViolation?.description || data.threatDescription}
+          </p>
         </div>
       ) : (
         <div className="mt-3 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs text-zinc-400">
-          <span className="flex items-center gap-1.5 text-emerald-400/90 font-medium">
+          <span className="flex items-center gap-1.5 text-emerald-400/90 font-medium text-[11px]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Protected
           </span>
-          <span className="text-[11px] text-zinc-500 font-mono">{id}</span>
+          <span className="text-[10px] text-zinc-500 font-mono">{id}</span>
         </div>
       )}
 

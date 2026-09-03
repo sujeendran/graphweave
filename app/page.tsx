@@ -7,24 +7,17 @@ import {
   Controls,
   MiniMap,
   NodeTypes,
-  Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useCanvasStore, ServiceNodeData } from '@/store/useCanvasStore';
+import { useCanvasStore } from '@/store/useCanvasStore';
 import { CustomServiceNode } from '@/components/CustomServiceNode';
 import { ControlToolbar } from '@/components/ControlToolbar';
-import { TelemetryOverlay } from '@/components/TelemetryOverlay';
-import { ThreatModal } from '@/components/ThreatModal';
+import { BottomDiagnosticsDock } from '@/components/BottomDiagnosticsDock';
+import { EdgeConfigModal } from '@/components/EdgeConfigModal';
 import { TopologySnapshotModal } from '@/components/TopologySnapshotModal';
+import { AppGuideCard } from '@/components/AppGuideCard';
 import { useWebMCP } from '@/hooks/useWebMCP';
-import {
-  Sparkles,
-  MousePointerClick,
-  ShieldCheck,
-  Zap,
-  Info,
-} from 'lucide-react';
 
 export default function GraphWeavePage() {
   const [mounted, setMounted] = useState(false);
@@ -40,18 +33,20 @@ export default function GraphWeavePage() {
     onNodesChange,
     onEdgesChange,
     onConnect,
+    setSelectedNodeId,
+    setSelectedEdgeId,
     autoLayout,
     clearCanvas,
     addServiceNode,
     connectServices,
-    flagThreat,
-    resolveThreat,
+    updateEdge,
     logActivity,
   } = useCanvasStore();
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    autoLayout('LR');
+  }, [autoLayout]);
 
   const nodeTypes: NodeTypes = useMemo(
     () => ({
@@ -60,71 +55,105 @@ export default function GraphWeavePage() {
     []
   );
 
-  // Complete 2-Stage Agentic Scenario (Generative Pipeline -> STRIDE Analysis -> Automated Healing)
+  // Realistic Agentic Co-Pilot Scenario (Synthesis -> Linter Audit -> 1-Click Auto-Remediation -> Compliance Verification)
   const runSimulatedScenario = useCallback(async () => {
     if (isSimulating) return;
     setIsSimulating(true);
 
     try {
-      logActivity('Simulation started: Autonomous Agent Architecture & Threat Healing', 'agent');
       clearCanvas();
-      await new Promise((r) => setTimeout(r, 400));
-
-      // Step 1: Agent spawns edge gateway
-      addServiceNode('cf-gateway', 'Cloudflare WAF / Ingress', 'gateway', 'edge');
-      await new Promise((r) => setTimeout(r, 600));
-
-      // Step 2: Agent spawns compute microservices
-      addServiceNode('auth-svc', 'OAuth 2.0 Auth Server', 'compute', 'application');
-      addServiceNode('payment-svc', 'PCI Payment Engine (Go)', 'compute', 'application');
-      connectServices('cf-gateway', 'auth-svc', 'HTTPS/2 (mTLS)', true);
-      connectServices('cf-gateway', 'payment-svc', 'HTTPS/2 (mTLS)', true);
-      autoLayout('LR');
-      await new Promise((r) => setTimeout(r, 800));
-
-      // Step 3: Agent spawns database with unencrypted channel
-      addServiceNode('pg-primary', 'PostgreSQL 16 Primary', 'database', 'persistence');
-      connectServices('payment-svc', 'pg-primary', 'TCP Plaintext (Unsecured)', false);
-      autoLayout('LR');
-      await new Promise((r) => setTimeout(r, 700));
-
-      // Step 4: Agent spawns cache
-      addServiceNode('redis-cache', 'Redis Session Cluster', 'cache', 'persistence');
-      connectServices('auth-svc', 'redis-cache', 'RESP3 (mTLS)', true);
-      autoLayout('LR');
-      await new Promise((r) => setTimeout(r, 800));
-
-      // Step 5: WebMCP Agent executes STRIDE threat modeling on topology
       logActivity(
-        'Agent invoked STRIDE Threat Modeling algorithm over canvas://topology',
-        'agent',
-        'Evaluated 5 nodes and 4 edges for CVEs, SPOF, and unencrypted boundaries.'
-      );
-      await new Promise((r) => setTimeout(r, 500));
-
-      flagThreat(
-        'pg-primary',
-        'critical',
-        'Single Point of Failure: No standby replica or automated failover pool configured.',
-        'SPOF'
+        'Phase 1/5: Synthesizing distributed topology from cloud architecture requirements...',
+        'agent'
       );
       await new Promise((r) => setTimeout(r, 1200));
 
-      // Step 6: Autonomous Agent Healing
+      // Step 1: Agent spawns edge gateway
+      addServiceNode('cf-gateway', 'Cloudflare Edge WAF', 'gateway', 'edge', 'agent');
       logActivity(
-        'Agent self-healing: Provisioning hot standby replica & upgrading channel to mTLS',
+        'Provisioned Edge Tier: Cloudflare WAF & DDoS Ingress Gateway',
         'agent'
       );
-      addServiceNode('pg-standby', 'PostgreSQL Read Replica (Hot Standby)', 'database', 'persistence');
-      connectServices('pg-primary', 'pg-standby', 'WAL Streaming (TLS)', true);
-      connectServices('payment-svc', 'pg-primary', 'gRPC (mTLS Secured)', true);
-      resolveThreat('pg-primary');
-      autoLayout('LR');
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 1500));
 
+      // Step 2: Agent spawns compute microservices
+      addServiceNode('auth-svc', 'OAuth 2.0 Auth Server', 'compute', 'application', 'agent');
+      addServiceNode('payment-svc', 'PCI Payment Engine (Go)', 'compute', 'application', 'agent');
+      connectServices('cf-gateway', 'auth-svc', 'HTTPS / REST (TLS)', true, 'agent');
+      connectServices('cf-gateway', 'payment-svc', 'HTTPS / REST (TLS)', true, 'agent');
+      autoLayout('LR');
       logActivity(
-        'Autonomous remediation complete: Architecture is fully redundant and encrypted.',
+        'Provisioned Application Tier: OAuth Auth & Payment Engine (mTLS secured)',
         'agent'
+      );
+      await new Promise((r) => setTimeout(r, 1800));
+
+      // Step 3: Agent spawns database with unencrypted channel
+      addServiceNode('pg-primary', 'PostgreSQL 16 Primary', 'database', 'persistence', 'agent');
+      connectServices('payment-svc', 'pg-primary', 'TCP Plaintext (Unsecured)', false, 'agent');
+      autoLayout('LR');
+      logActivity(
+        'Provisioned Persistence Tier: PostgreSQL 16 Primary (Standalone)',
+        'agent',
+        'Notice: Unsecured plaintext connection wired'
+      );
+      await new Promise((r) => setTimeout(r, 1800));
+
+      // Step 4: WebMCP Agent queries canvas://audit-report via W3C WebMCP
+      logActivity(
+        'Phase 2/5: Agent inspecting canvas://audit-report via W3C WebMCP...',
+        'agent',
+        'Linter detected violations: SPOF (No DB replica), Plaintext Transport Risk, and Uncached DB Bottleneck.'
+      );
+      await new Promise((r) => setTimeout(r, 2200));
+
+      // Step 5: WebMCP Agent calls auto_remediate_violation for SPOF
+      logActivity(
+        'Phase 3/5: Agent invoking auto_remediate_violation("violation-spof-pg-primary")...',
+        'agent',
+        'Provisioning hot standby replica with PostgreSQL streaming replication.'
+      );
+      await new Promise((r) => setTimeout(r, 1800));
+
+      addServiceNode('pg-standby', 'PostgreSQL Standby Replica', 'database', 'persistence', 'agent');
+      connectServices('pg-primary', 'pg-standby', 'PostgreSQL Streaming Replication', true, 'agent');
+      autoLayout('LR');
+      await new Promise((r) => setTimeout(r, 1500));
+
+      // Step 6: WebMCP Agent calls auto_remediate_violation for Plaintext channel
+      logActivity(
+        'Agent invoking auto_remediate_violation for unencrypted transport channel...',
+        'agent',
+        'Upgrading payment-svc -> pg-primary to PostgreSQL Wire (TLS Encrypted).'
+      );
+      await new Promise((r) => setTimeout(r, 1500));
+
+      updateEdge('e-payment-svc-pg-primary', {
+        protocol: 'PostgreSQL Wire (TLS)',
+        isEncrypted: true,
+        port: '5432',
+      });
+      autoLayout('LR');
+      await new Promise((r) => setTimeout(r, 1600));
+
+      // Step 7: WebMCP Agent calls auto_remediate_violation for Performance Bottleneck (Uncached DB Queries)
+      logActivity(
+        'Phase 4/5: Agent resolving performance warning: inserting Redis caching tier...',
+        'agent',
+        'Provisioning Redis Cluster Cache to eliminate direct database read bottleneck on payment-svc.'
+      );
+      await new Promise((r) => setTimeout(r, 1600));
+
+      addServiceNode('redis-cache', 'Redis Cluster Cache', 'cache', 'persistence', 'agent');
+      connectServices('payment-svc', 'redis-cache', 'Redis RESP3 (TLS)', true, 'agent');
+      autoLayout('LR');
+      await new Promise((r) => setTimeout(r, 1600));
+
+      // Step 8: Final verification
+      logActivity(
+        'Phase 5/5: Security & Performance posture verified — 0 violations, 100% compliant, cached & redundant.',
+        'agent',
+        'All rules passed: Multi-AZ database redundancy, Redis caching tier, and end-to-end TLS encryption active.'
       );
     } finally {
       setIsSimulating(false);
@@ -134,9 +163,8 @@ export default function GraphWeavePage() {
     clearCanvas,
     addServiceNode,
     connectServices,
+    updateEdge,
     autoLayout,
-    flagThreat,
-    resolveThreat,
     logActivity,
   ]);
 
@@ -166,6 +194,11 @@ export default function GraphWeavePage() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onEdgeClick={(_, edge) => setSelectedEdgeId(edge.id)}
+          onPaneClick={() => {
+            setSelectedNodeId(null);
+            setSelectedEdgeId(null);
+          }}
           nodeTypes={nodeTypes}
           fitView
           fitViewOptions={{
@@ -190,33 +223,14 @@ export default function GraphWeavePage() {
           />
         </ReactFlow>
 
-        {/* Floating Quick Guide / Legend */}
-        <div className="absolute top-4 left-4 z-10 pointer-events-auto bg-zinc-900/90 border border-zinc-800 rounded-xl p-3.5 backdrop-blur-md shadow-xl max-w-xs hidden sm:flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-xs font-medium text-zinc-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-            <span>Architecture & Threat Map</span>
-          </div>
-          <p className="text-[11px] text-zinc-400 leading-relaxed font-normal">
-            Drag nodes to reshape topology. Click any component to inspect security controls or simulate failure scenarios.
-          </p>
-          <div className="flex flex-wrap gap-3 text-xs font-sans text-zinc-400 pt-2 border-t border-zinc-800">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-sky-400" /> Encrypted
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-rose-500" /> Plaintext Risk
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400" /> Warning
-            </span>
-          </div>
-        </div>
+        {/* Floating Interactive Guide: Overview, How-To, and WebMCP */}
+        <AppGuideCard />
 
-        {/* Telemetry Log Stream */}
-        <TelemetryOverlay />
+        {/* Unified Bottom Dock: Diagnostics & Violations + WebMCP Telemetry */}
+        <BottomDiagnosticsDock />
 
-        {/* Threat Inspection Modal */}
-        <ThreatModal />
+        {/* Connection Properties / Cryptography Modal */}
+        <EdgeConfigModal />
 
         {/* WebMCP Topology Snapshot Modal */}
         <TopologySnapshotModal

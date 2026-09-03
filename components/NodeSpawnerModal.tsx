@@ -30,7 +30,7 @@ export function NodeSpawnerModal({ isOpen, onClose }: NodeSpawnerModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!id.trim() || !label.trim()) return;
-    addServiceNode(id.trim().toLowerCase().replace(/\s+/g, '-'), label.trim(), serviceType, tier);
+    addServiceNode(id.trim().toLowerCase().replace(/\s+/g, '-'), label.trim(), serviceType, tier, 'human');
     setId('');
     setLabel('');
     onClose();
