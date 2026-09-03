@@ -142,15 +142,15 @@ export default function GraphWeavePage() {
 
   if (!mounted) {
     return (
-      <div className="w-screen h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400 gap-3">
-        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="w-screen h-screen bg-zinc-950 flex flex-col items-center justify-center text-zinc-400 gap-3">
+        <div className="w-8 h-8 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
         <p className="text-xs font-mono">Initializing GraphWeave Canvas Engine...</p>
       </div>
     );
   }
 
   return (
-    <main className="w-screen h-screen bg-slate-950 flex flex-col overflow-hidden text-slate-100 select-none">
+    <main className="w-screen h-screen bg-zinc-950 flex flex-col overflow-hidden text-zinc-100 select-none">
       {/* Top Application Bar */}
       <ControlToolbar
         onRunSimulation={runSimulatedScenario}
@@ -168,42 +168,46 @@ export default function GraphWeavePage() {
           onConnect={onConnect}
           nodeTypes={nodeTypes}
           fitView
+          fitViewOptions={{
+            padding: 0.25,
+            maxZoom: 0.88,
+          }}
           attributionPosition="bottom-left"
           minZoom={0.2}
           maxZoom={2}
-          defaultViewport={{ x: 0, y: 0, zoom: 0.9 }}
+          defaultViewport={{ x: 0, y: 0, zoom: 0.88 }}
         >
-          <Background color="#1e293b" gap={24} size={1.5} />
+          <Background color="#27272a" gap={24} size={1.2} />
           <Controls
             showInteractive={false}
-            className="!bg-slate-900 !border-slate-800 !shadow-2xl fill-slate-300"
+            className="!bg-zinc-900 !border-zinc-800 !shadow-xl fill-zinc-300"
           />
           <MiniMap
-            nodeStrokeColor="#6366f1"
-            nodeColor="#1e293b"
-            maskColor="rgba(2, 6, 23, 0.75)"
-            className="!bg-slate-900 !border-slate-800 rounded-xl overflow-hidden shadow-2xl"
+            nodeStrokeColor="#71717a"
+            nodeColor="#27272a"
+            maskColor="rgba(9, 9, 11, 0.8)"
+            className="!bg-zinc-900 !border-zinc-800 rounded-xl overflow-hidden shadow-xl"
           />
         </ReactFlow>
 
         {/* Floating Quick Guide / Legend */}
-        <div className="absolute top-4 left-4 z-10 pointer-events-auto bg-slate-900/90 border border-slate-800/90 rounded-xl p-3 backdrop-blur-md shadow-2xl max-w-xs hidden sm:flex flex-col gap-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-white">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Interactive WebMCP Canvas</span>
+        <div className="absolute top-4 left-4 z-10 pointer-events-auto bg-zinc-900/90 border border-zinc-800 rounded-xl p-3.5 backdrop-blur-md shadow-xl max-w-xs hidden sm:flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-xs font-medium text-zinc-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+            <span>Architecture & Threat Map</span>
           </div>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            Drag nodes to reshape topology. Click any node to inspect STRIDE threats or trigger one-click remediation.
+          <p className="text-[11px] text-zinc-400 leading-relaxed font-normal">
+            Drag nodes to reshape topology. Click any component to inspect security controls or simulate failure scenarios.
           </p>
-          <div className="flex flex-wrap gap-2 text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800/80">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-indigo-500" /> Encrypted
+          <div className="flex flex-wrap gap-3 text-xs font-sans text-zinc-400 pt-2 border-t border-zinc-800">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-sky-400" /> Encrypted
             </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" /> Plaintext Risk
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-rose-500" /> Plaintext Risk
             </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-amber-500" /> Warning
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400" /> Warning
             </span>
           </div>
         </div>

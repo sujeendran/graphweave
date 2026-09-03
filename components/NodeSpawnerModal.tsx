@@ -42,22 +42,22 @@ export function NodeSpawnerModal({ isOpen, onClose }: NodeSpawnerModalProps) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 text-slate-100 flex flex-col gap-5 relative"
+        className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 text-zinc-100 flex flex-col gap-5 relative"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-600/20 text-indigo-400 rounded-lg border border-indigo-500/30">
+            <div className="p-2 bg-zinc-800 text-zinc-200 rounded-lg border border-zinc-700">
               <Plus className="w-4 h-4" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-white">Spawn Service Node</h3>
-              <p className="text-[11px] text-slate-400">Add an architectural component to the topology</p>
+              <p className="text-[11px] text-zinc-400">Add an architectural component to the topology</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
           >
             <X className="w-4 h-4" />
           </button>
@@ -65,7 +65,7 @@ export function NodeSpawnerModal({ isOpen, onClose }: NodeSpawnerModalProps) {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="text-[11px] text-slate-400 uppercase font-mono block mb-1">
+            <label className="text-xs font-medium text-zinc-300 block mb-1.5">
               Service ID
             </label>
             <input
@@ -74,12 +74,12 @@ export function NodeSpawnerModal({ isOpen, onClose }: NodeSpawnerModalProps) {
               placeholder="e.g. k8s-worker-pool"
               value={id}
               onChange={(e) => setId(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-500 font-mono"
             />
           </div>
 
           <div>
-            <label className="text-[11px] text-slate-400 uppercase font-mono block mb-1">
+            <label className="text-xs font-medium text-zinc-300 block mb-1.5">
               Display Name
             </label>
             <input
@@ -88,12 +88,12 @@ export function NodeSpawnerModal({ isOpen, onClose }: NodeSpawnerModalProps) {
               placeholder="e.g. Kubernetes Worker Cluster"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-500 font-sans"
             />
           </div>
 
           <div>
-            <label className="text-[11px] text-slate-400 uppercase font-mono block mb-1">
+            <label className="text-xs font-medium text-zinc-300 block mb-1.5">
               Service Type
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -104,8 +104,8 @@ export function NodeSpawnerModal({ isOpen, onClose }: NodeSpawnerModalProps) {
                   onClick={() => setServiceType(type)}
                   className={`flex items-center gap-2 p-2 rounded-lg text-left text-xs border transition ${
                     serviceType === type
-                      ? 'bg-indigo-600/30 border-indigo-500 text-white font-medium'
-                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                      ? 'bg-zinc-100 border-zinc-200 text-zinc-950 font-medium shadow-sm'
+                      : 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5 flex-shrink-0" />
@@ -116,7 +116,7 @@ export function NodeSpawnerModal({ isOpen, onClose }: NodeSpawnerModalProps) {
           </div>
 
           <div>
-            <label className="text-[11px] text-slate-400 uppercase font-mono block mb-1">
+            <label className="text-xs font-medium text-zinc-300 block mb-1.5">
               Tier Level
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -125,10 +125,10 @@ export function NodeSpawnerModal({ isOpen, onClose }: NodeSpawnerModalProps) {
                   type="button"
                   key={t}
                   onClick={() => setTier(t)}
-                  className={`py-1.5 px-2 rounded-lg text-center text-xs uppercase font-mono border transition ${
+                  className={`py-1.5 px-2 rounded-lg text-center text-xs capitalize border transition ${
                     tier === t
-                      ? 'bg-indigo-600/30 border-indigo-500 text-white font-bold'
-                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                      ? 'bg-zinc-100 border-zinc-200 text-zinc-950 font-medium shadow-sm'
+                      : 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
                   }`}
                 >
                   {t}
@@ -139,7 +139,7 @@ export function NodeSpawnerModal({ isOpen, onClose }: NodeSpawnerModalProps) {
 
           <button
             type="submit"
-            className="mt-2 w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition active:scale-98 flex items-center justify-center gap-1.5"
+            className="mt-2 w-full py-2.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold shadow-sm transition active:scale-98 flex items-center justify-center gap-1.5"
           >
             <Plus className="w-4 h-4" /> Add Component to Canvas
           </button>

@@ -1,5 +1,18 @@
 import type { Metadata } from 'next';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'GraphWeave | Agentic Architecture & Real-Time Threat-Modeling Canvas',
@@ -40,8 +53,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark h-full">
-      <body className="h-full bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+    <html lang="en" className={`dark h-full ${inter.variable} ${jetbrainsMono.variable}`}>
+      <body className="h-full bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-zinc-700 selection:text-zinc-100">
         {children}
       </body>
     </html>

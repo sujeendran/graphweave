@@ -147,7 +147,7 @@ const initialEdges: Edge[] = [
     target: 'auth-svc',
     label: 'HTTPS/2 (mTLS)',
     animated: true,
-    style: { stroke: '#6366f1', strokeWidth: 2 },
+    style: { stroke: '#38bdf8', strokeWidth: 2 },
   },
   {
     id: 'e-ingress-core',
@@ -155,7 +155,7 @@ const initialEdges: Edge[] = [
     target: 'core-api',
     label: 'gRPC (TLS)',
     animated: true,
-    style: { stroke: '#6366f1', strokeWidth: 2 },
+    style: { stroke: '#38bdf8', strokeWidth: 2 },
   },
   {
     id: 'e-core-db',
@@ -218,7 +218,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       id: `e-${connection.source}-${connection.target}-${Date.now().toString(36)}`,
       animated: true,
       label: 'TLS Channel',
-      style: { stroke: '#6366f1', strokeWidth: 2 },
+      style: { stroke: '#38bdf8', strokeWidth: 2 },
     };
     set({ edges: addEdge(newEdge, get().edges) });
     get().logActivity(`Connected ${connection.source} → ${connection.target}`, 'human');
@@ -257,7 +257,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       label: protocol,
       animated: true,
       style: {
-        stroke: isEncrypted ? '#6366f1' : '#f43f5e',
+        stroke: isEncrypted ? '#38bdf8' : '#f43f5e',
         strokeWidth: 2,
         strokeDasharray: isEncrypted ? undefined : '5,5',
       },
@@ -315,7 +315,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
             return {
               ...edge,
               label: 'mTLS (Secured)',
-              style: { stroke: '#6366f1', strokeWidth: 2 },
+              style: { stroke: '#38bdf8', strokeWidth: 2 },
             };
           }
         }
@@ -340,11 +340,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   autoLayout: (direction = 'LR') => {
     const g = new dagre.graphlib.Graph();
-    g.setGraph({ rankdir: direction, nodesep: 70, ranksep: 120 });
+    g.setGraph({ rankdir: direction, nodesep: 60, ranksep: 140 });
     g.setDefaultEdgeLabel(() => ({}));
 
     const { nodes, edges } = get();
-    nodes.forEach((node) => g.setNode(node.id, { width: 230, height: 95 }));
+    nodes.forEach((node) => g.setNode(node.id, { width: 260, height: 95 }));
     edges.forEach((edge) => g.setEdge(edge.source, edge.target));
 
     dagre.layout(g);
@@ -354,7 +354,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       return {
         ...node,
         position: {
-          x: nodePosition ? nodePosition.x - 115 : node.position.x,
+          x: nodePosition ? nodePosition.x - 130 : node.position.x,
           y: nodePosition ? nodePosition.y - 47 : node.position.y,
         },
       };
@@ -453,9 +453,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       ];
 
       const pEdges: Edge[] = [
-        { id: 'e-cf-auth', source: 'cf-edge', target: 'auth-jwt', label: 'HTTPS/2', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 } },
-        { id: 'e-cf-checkout', source: 'cf-edge', target: 'checkout-api', label: 'HTTPS/2', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 } },
-        { id: 'e-checkout-vault', source: 'checkout-api', target: 'payment-vault', label: 'gRPC (mTLS)', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 } },
+        { id: 'e-cf-auth', source: 'cf-edge', target: 'auth-jwt', label: 'HTTPS/2', animated: true, style: { stroke: '#38bdf8', strokeWidth: 2 } },
+        { id: 'e-cf-checkout', source: 'cf-edge', target: 'checkout-api', label: 'HTTPS/2', animated: true, style: { stroke: '#38bdf8', strokeWidth: 2 } },
+        { id: 'e-checkout-vault', source: 'checkout-api', target: 'payment-vault', label: 'gRPC (mTLS)', animated: true, style: { stroke: '#38bdf8', strokeWidth: 2 } },
         { id: 'e-vault-db', source: 'payment-vault', target: 'pg-orders', label: 'TCP Plaintext', animated: true, style: { stroke: '#f43f5e', strokeWidth: 2, strokeDasharray: '5,5' } },
       ];
 
@@ -504,10 +504,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       ];
 
       const pEdges: Edge[] = [
-        { id: 'e-gw-orch', source: 'ai-gateway', target: 'orchestrator', label: 'WebSocket Stream', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 } },
-        { id: 'e-orch-embed', source: 'orchestrator', target: 'embed-svc', label: 'gRPC', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 } },
+        { id: 'e-gw-orch', source: 'ai-gateway', target: 'orchestrator', label: 'WebSocket Stream', animated: true, style: { stroke: '#38bdf8', strokeWidth: 2 } },
+        { id: 'e-orch-embed', source: 'orchestrator', target: 'embed-svc', label: 'gRPC', animated: true, style: { stroke: '#38bdf8', strokeWidth: 2 } },
         { id: 'e-orch-qdrant', source: 'orchestrator', target: 'qdrant-cluster', label: 'REST (Unauthenticated)', animated: true, style: { stroke: '#f43f5e', strokeWidth: 2, strokeDasharray: '5,5' } },
-        { id: 'e-orch-s3', source: 'orchestrator', target: 's3-docs', label: 'HTTPS (IAM)', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 } },
+        { id: 'e-orch-s3', source: 'orchestrator', target: 's3-docs', label: 'HTTPS (IAM)', animated: true, style: { stroke: '#38bdf8', strokeWidth: 2 } },
       ];
 
       set({ nodes: pNodes, edges: pEdges });
@@ -554,11 +554,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       ];
 
       const pEdges: Edge[] = [
-        { id: 'e-kg-user', source: 'kong-gw', target: 'user-svc', label: 'HTTP/2', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 } },
-        { id: 'e-kg-order', source: 'kong-gw', target: 'order-svc', label: 'HTTP/2', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 } },
-        { id: 'e-order-kafka', source: 'order-svc', target: 'kafka-bus', label: 'Kafka Protocol', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 } },
-        { id: 'e-order-redis', source: 'order-svc', target: 'redis-cache', label: 'RESP3', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 } },
-        { id: 'e-kafka-analytics', source: 'kafka-bus', target: 'analytics-svc', label: 'Consumer Group', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 } },
+        { id: 'e-kg-user', source: 'kong-gw', target: 'user-svc', label: 'HTTP/2', animated: true, style: { stroke: '#38bdf8', strokeWidth: 2 } },
+        { id: 'e-kg-order', source: 'kong-gw', target: 'order-svc', label: 'HTTP/2', animated: true, style: { stroke: '#38bdf8', strokeWidth: 2 } },
+        { id: 'e-order-kafka', source: 'order-svc', target: 'kafka-bus', label: 'Kafka Protocol', animated: true, style: { stroke: '#38bdf8', strokeWidth: 2 } },
+        { id: 'e-order-redis', source: 'order-svc', target: 'redis-cache', label: 'RESP3', animated: true, style: { stroke: '#38bdf8', strokeWidth: 2 } },
+        { id: 'e-kafka-analytics', source: 'kafka-bus', target: 'analytics-svc', label: 'Consumer Group', animated: true, style: { stroke: '#38bdf8', strokeWidth: 2 } },
       ];
 
       set({ nodes: pNodes, edges: pEdges });
