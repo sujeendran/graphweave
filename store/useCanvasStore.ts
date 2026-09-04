@@ -61,7 +61,8 @@ interface CanvasState {
       customLabel?: string;
     }
   ) => void;
-  removeEdge: (id: string) => void;
+  removeEdge: (id: string, source?: 'agent' | 'human') => void;
+  disconnectServices: (source: string, target: string, sourceType?: 'agent' | 'human') => boolean;
   addServiceNode: (
     id: string,
     label: string,
@@ -84,8 +85,23 @@ interface CanvasState {
     category?: string
   ) => void;
   resolveThreat: (nodeId: string) => void;
-  removeNode: (nodeId: string) => void;
-  clearCanvas: () => void;
+  removeNode: (nodeId: string, source?: 'agent' | 'human') => void;
+  clearCanvas: (source?: 'agent' | 'human') => void;
+  simulateChaosOutage: (
+    nodeId: string,
+    scenario?: 'crash' | 'high_latency' | 'ddos'
+  ) => {
+    targetNode: string;
+    nodeLabel: string;
+    scenario: string;
+    status: string;
+    impact: {
+      downstreamNodes: string[];
+      upstreamNodes: string[];
+      affectedEdgeCount: number;
+    };
+    mitigationRecommendation: string;
+  };
   autoLayout: (direction?: 'LR' | 'TB') => void;
   getTopologySnapshot: () => {
     nodes: Array<{
@@ -274,15 +290,24 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     );
   },
 
-  removeEdge: (id) => {
+  removeEdge: (id, source = 'human') => {
     const edge = get().edges.find((e) => e.id === id);
     set({
       edges: get().edges.filter((e) => e.id !== id),
       selectedEdgeId: null,
     });
     if (edge) {
-      get().logActivity(`Removed connection: ${edge.source} → ${edge.target}`, 'human');
+      get().logActivity(`Removed connection: ${edge.source} → ${edge.target}`, source);
     }
+  },
+
+  disconnectServices: (source, target, sourceType = 'agent') => {
+    const edge = get().edges.find(
+      (e) => (e.source === source && e.target === target) || (e.source === target && e.target === source)
+    );
+    if (!edge) return false;
+    get().removeEdge(edge.id, sourceType);
+    return true;
   },
 
   logActivity: (action, source, details) => {
@@ -503,17 +528,65 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     }
   },
 
-  removeNode: (nodeId) => {
+  removeNode: (nodeId, source = 'human') => {
     set({
       nodes: get().nodes.filter((n) => n.id !== nodeId),
       edges: get().edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
       selectedNodeId: get().selectedNodeId === nodeId ? null : get().selectedNodeId,
     });
-    get().logActivity(`Removed node: ${nodeId}`, 'human');
+    get().logActivity(`Removed node: ${nodeId}`, source);
   },
 
-  clearCanvas: () => {
-    set({ nodes: [], edges: [], activities: [], selectedNodeId: null });
+  clearCanvas: (source = 'human') => {
+    const logSource = source === 'agent' ? 'agent' : 'human';
+    set({
+      nodes: [],
+      edges: [],
+      selectedNodeId: null,
+      selectedEdgeId: null,
+      selectedViolationId: null,
+    });
+    get().logActivity('Canvas reset: Cleared all nodes and edges', logSource);
+  },
+
+  simulateChaosOutage: (nodeId, scenario = 'crash') => {
+    const node = get().nodes.find((n) => n.id === nodeId);
+    if (!node) {
+      throw new Error(`Node "${nodeId}" not found for chaos simulation`);
+    }
+
+    const outgoingEdges = get().edges.filter((e) => e.source === nodeId);
+    const incomingEdges = get().edges.filter((e) => e.target === nodeId);
+    const downstreamNodeIds = outgoingEdges.map((e) => e.target);
+    const upstreamNodeIds = incomingEdges.map((e) => e.source);
+
+    // Flag node with critical outage threat
+    get().flagThreat(
+      nodeId,
+      'critical',
+      `[CHAOS OUTAGE - ${scenario.toUpperCase()}] Service is offline. ${downstreamNodeIds.length} downstream dependencies impacted.`,
+      'Chaos_Outage'
+    );
+
+    get().logActivity(
+      `Chaos Outage Simulated: ${node.data.label} (${scenario.toUpperCase()})`,
+      'agent',
+      `Impact: ${downstreamNodeIds.length} downstream nodes potentially isolated`
+    );
+
+    return {
+      targetNode: nodeId,
+      nodeLabel: node.data.label,
+      scenario,
+      status: 'offline',
+      impact: {
+        downstreamNodes: downstreamNodeIds,
+        upstreamNodes: upstreamNodeIds,
+        affectedEdgeCount: outgoingEdges.length + incomingEdges.length,
+      },
+      mitigationRecommendation:
+        'Provision a standby replica with automated failover, or configure circuit breaking / fallback queue.',
+    };
   },
 
   autoLayout: (direction = 'LR') => {

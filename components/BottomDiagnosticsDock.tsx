@@ -269,7 +269,22 @@ export function BottomDiagnosticsDock() {
 
             {/* TAB 2: WEBMCP TELEMETRY */}
             {activeTab === 'telemetry' && (
-              <div className="space-y-1.5 font-mono text-[11px]">
+              <div className="space-y-2 font-mono text-[11px]">
+                <div className="p-2.5 rounded-lg bg-zinc-950/80 border border-sky-900/40 flex items-center justify-between gap-3 text-[11px] font-sans">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-zinc-300">
+                      Standard Interface:{' '}
+                      <code className="text-sky-300 font-mono text-[11px] bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
+                        document.modelContext.registerTool()
+                      </code>
+                    </span>
+                  </div>
+                  <span className="text-zinc-400 font-mono text-[10px] bg-zinc-900/80 px-2 py-0.5 rounded border border-zinc-800">
+                    12 Tools Active
+                  </span>
+                </div>
+
                 {activities.length === 0 ? (
                   <div className="text-center py-6 text-zinc-500">No telemetry logged yet</div>
                 ) : (

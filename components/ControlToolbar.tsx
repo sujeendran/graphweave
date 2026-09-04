@@ -270,7 +270,7 @@ export function ControlToolbar({
 
           {/* Reset Canvas */}
           <button
-            onClick={clearCanvas}
+            onClick={() => clearCanvas('human')}
             title="Reset Canvas"
             className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-zinc-800 border border-zinc-800/80 transition"
           >

@@ -3,6 +3,32 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useCanvasStore, ServiceType, ThreatLevel } from '@/store/useCanvasStore';
 
+declare global {
+  interface Document {
+    modelContext?: {
+      registerTool: (
+        spec: WebMCPToolDefinition,
+        options?: { signal?: AbortSignal }
+      ) => void;
+      registerResource?: (spec: unknown) => void;
+      listTools?: () => WebMCPToolDefinition[];
+      getTool?: (name: string) => WebMCPToolDefinition | undefined;
+    };
+  }
+  interface Window {
+    modelContext?: Document['modelContext'];
+    webMCP?: {
+      invokeTool: (toolName: string, params: Record<string, unknown>) => Promise<unknown>;
+      getTopologySnapshot: () => unknown;
+      getAuditReport: () => unknown;
+      listTools: () => WebMCPToolDefinition[];
+    };
+  }
+  interface Navigator {
+    modelContext?: Document['modelContext'];
+  }
+}
+
 export interface WebMCPToolDefinition {
   name: string;
   description: string;
@@ -29,9 +55,13 @@ export function useWebMCP() {
 
   const {
     addServiceNode,
+    removeNode,
     connectServices,
+    disconnectServices,
     flagThreat,
     resolveThreat,
+    simulateChaosOutage,
+    clearCanvas,
     autoLayout,
     getTopologySnapshot,
     getAuditReport,
@@ -71,6 +101,14 @@ export function useWebMCP() {
             content: [{ type: 'text', text: `Successfully spawned node: ${label} (${id})` }],
           };
         }
+        case 'remove_service_node': {
+          const { nodeId } = params as { nodeId: string };
+          removeNode(nodeId, 'agent');
+          return {
+            content: [{ type: 'text', text: `Successfully decommissioned service node: ${nodeId}` }],
+          };
+        }
+        case 'add_connection':
         case 'connect_services': {
           const { sourceId, targetId, protocol, isEncrypted } = params as {
             sourceId: string;
@@ -81,6 +119,21 @@ export function useWebMCP() {
           connectServices(sourceId, targetId, protocol || 'HTTPS', isEncrypted ?? true, 'agent');
           return {
             content: [{ type: 'text', text: `Connected ${sourceId} → ${targetId} via ${protocol || 'HTTPS'}` }],
+          };
+        }
+        case 'remove_connection': {
+          const { sourceId, targetId } = params as {
+            sourceId: string;
+            targetId: string;
+          };
+          const removed = disconnectServices(sourceId, targetId, 'agent');
+          if (!removed) {
+            return {
+              content: [{ type: 'text', text: `No connection found between ${sourceId} and ${targetId}.` }],
+            };
+          }
+          return {
+            content: [{ type: 'text', text: `Successfully removed connection between ${sourceId} and ${targetId}.` }],
           };
         }
         case 'flag_threat': {
@@ -106,6 +159,22 @@ export function useWebMCP() {
             content: [{ type: 'text', text: `Resolved threat on node: ${nodeId}` }],
           };
         }
+        case 'simulate_chaos_outage': {
+          const { nodeId, scenario } = params as {
+            nodeId: string;
+            scenario?: 'crash' | 'high_latency' | 'ddos';
+          };
+          const report = simulateChaosOutage(nodeId, scenario || 'crash');
+          return {
+            content: [{ type: 'text', text: JSON.stringify(report, null, 2) }],
+          };
+        }
+        case 'reset_canvas': {
+          clearCanvas('agent');
+          return {
+            content: [{ type: 'text', text: 'Canvas successfully reset. All nodes and connections cleared.' }],
+          };
+        }
         case 'apply_auto_layout': {
           const { direction } = (params || {}) as { direction?: 'LR' | 'TB' };
           autoLayout(direction || 'LR');
@@ -125,9 +194,13 @@ export function useWebMCP() {
     },
     [
       addServiceNode,
+      removeNode,
       connectServices,
+      disconnectServices,
       flagThreat,
       resolveThreat,
+      simulateChaosOutage,
+      clearCanvas,
       autoLayout,
       getTopologySnapshot,
       getAuditReport,
@@ -144,22 +217,13 @@ export function useWebMCP() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    // Detect native document.modelContext or install standard-compliant implementation
-    const doc = document as unknown as {
-      modelContext?: {
-        registerTool: (spec: WebMCPToolDefinition, options?: { signal?: AbortSignal }) => void;
-        registerResource?: (spec: unknown) => void;
-        listTools?: () => WebMCPToolDefinition[];
-        getTool?: (name: string) => WebMCPToolDefinition | undefined;
-      };
-    };
+    // Detect native document.modelContext or install standard-compliant polyfill
+    const isNative = typeof document.modelContext?.registerTool === 'function';
 
-    const isNative = typeof doc.modelContext?.registerTool === 'function';
-
-    // Polyfill document.modelContext if not natively provided by the browser
-    if (!doc.modelContext) {
+    // Polyfill document.modelContext if not natively provided by the browser environment
+    if (!document.modelContext) {
       const toolMap = new Map<string, WebMCPToolDefinition>();
-      doc.modelContext = {
+      document.modelContext = {
         registerTool: (spec: WebMCPToolDefinition, options?: { signal?: AbortSignal }) => {
           toolMap.set(spec.name, spec);
           if (options?.signal) {
@@ -174,8 +238,8 @@ export function useWebMCP() {
     }
 
     // Mirror to window.modelContext and navigator.modelContext for cross-environment compatibility
-    (window as unknown as Record<string, unknown>).modelContext = doc.modelContext;
-    (navigator as unknown as Record<string, unknown>).modelContext = doc.modelContext;
+    window.modelContext = document.modelContext;
+    (navigator as unknown as Record<string, unknown>).modelContext = document.modelContext;
 
     // Tool specifications matching OpenAI WebMCP / Chrome W3C specification
     const toolDefinitions: WebMCPToolDefinition[] = [
@@ -230,7 +294,21 @@ export function useWebMCP() {
         },
       },
       {
-        name: 'connect_services',
+        name: 'remove_service_node',
+        description: 'Decommission a service node from the visual canvas and safely prune all attached network connections.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            nodeId: { type: 'string', description: 'Unique alphanumeric identifier of the service node to decommission' },
+          },
+          required: ['nodeId'],
+        },
+        execute: async (args: Record<string, unknown>) => {
+          return invokeTool('remove_service_node', args);
+        },
+      },
+      {
+        name: 'add_connection',
         description: 'Establish a network connection edge between two services with protocol and encryption attributes.',
         inputSchema: {
           type: 'object',
@@ -243,7 +321,22 @@ export function useWebMCP() {
           required: ['sourceId', 'targetId', 'protocol'],
         },
         execute: async (args: Record<string, unknown>) => {
-          return invokeTool('connect_services', args);
+          return invokeTool('add_connection', args);
+        },
+      },
+      {
+        name: 'remove_connection',
+        description: 'Sever a network connection link between two services.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            sourceId: { type: 'string', description: 'Source service node ID' },
+            targetId: { type: 'string', description: 'Target destination service node ID' },
+          },
+          required: ['sourceId', 'targetId'],
+        },
+        execute: async (args: Record<string, unknown>) => {
+          return invokeTool('remove_connection', args);
         },
       },
       {
@@ -256,7 +349,7 @@ export function useWebMCP() {
             riskLevel: { type: 'string', enum: ['low', 'medium', 'critical'], description: 'Risk severity' },
             category: {
               type: 'string',
-              enum: ['SPOF', 'Unencrypted', 'DDoS_Risk', 'Data_Breach', 'Privilege_Escalation', 'Tampering'],
+              enum: ['SPOF', 'Unencrypted', 'DDoS_Risk', 'Data_Breach', 'Privilege_Escalation', 'Tampering', 'Chaos_Outage'],
               description: 'STRIDE threat category',
             },
             description: { type: 'string', description: 'Explanation and remediation recommendation' },
@@ -280,6 +373,37 @@ export function useWebMCP() {
         },
         execute: async (args: Record<string, unknown>) => {
           return invokeTool('resolve_threat', args);
+        },
+      },
+      {
+        name: 'simulate_chaos_outage',
+        description: 'Simulate a chaos engineering service outage (crash, latency, DDoS) to evaluate cascading dependency impacts.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            nodeId: { type: 'string', description: 'Target node ID to take offline' },
+            scenario: {
+              type: 'string',
+              enum: ['crash', 'high_latency', 'ddos'],
+              default: 'crash',
+              description: 'Chaos failure scenario',
+            },
+          },
+          required: ['nodeId'],
+        },
+        execute: async (args: Record<string, unknown>) => {
+          return invokeTool('simulate_chaos_outage', args);
+        },
+      },
+      {
+        name: 'reset_canvas',
+        description: 'Reset the visual canvas to a blank slate by clearing all nodes and connections.',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+        execute: async () => {
+          return invokeTool('reset_canvas', {});
         },
       },
       {
@@ -308,7 +432,7 @@ export function useWebMCP() {
       },
     ];
 
-    // Register all tools onto document.modelContext
+    // Register all tools directly onto document.modelContext as required by WebMCP
     const registeredToolNames: string[] = [];
     toolDefinitions.forEach((tool) => {
       const fullSpec: WebMCPToolDefinition = {
@@ -318,18 +442,19 @@ export function useWebMCP() {
       };
 
       try {
-        doc.modelContext?.registerTool(fullSpec, { signal: controller.signal });
+        // Expose tool through the standard document.modelContext.registerTool() API
+        document.modelContext?.registerTool(fullSpec, { signal: controller.signal });
         registeredToolNames.push(tool.name);
       } catch (err) {
         console.warn(`WebMCP tool registration for "${tool.name}" encountered error:`, err);
       }
     });
 
-    // Register canvas resources
+    // Register canvas resources onto document.modelContext
     const registeredResourceNames: string[] = ['canvas://topology', 'canvas://audit-report'];
-    if (doc.modelContext?.registerResource) {
+    if (document.modelContext?.registerResource) {
       try {
-        doc.modelContext.registerResource({
+        document.modelContext.registerResource({
           uri: 'canvas://topology',
           name: 'Live Canvas Architecture Topology',
           mimeType: 'application/json',
@@ -347,7 +472,7 @@ export function useWebMCP() {
           },
         });
 
-        doc.modelContext.registerResource({
+        document.modelContext.registerResource({
           uri: 'canvas://audit-report',
           name: 'Real-Time Architecture Linter Audit Report',
           mimeType: 'application/json',
@@ -383,18 +508,11 @@ export function useWebMCP() {
     );
 
     // Expose runner on window for browser-level synthetic agent interactions & judges
-    (window as unknown as {
-      webMCP: {
-        invokeTool: typeof invokeTool;
-        getTopologySnapshot: typeof getTopologySnapshot;
-        getAuditReport: typeof getAuditReport;
-        listTools: () => WebMCPToolDefinition[];
-      };
-    }).webMCP = {
+    window.webMCP = {
       invokeTool,
       getTopologySnapshot,
       getAuditReport,
-      listTools: () => doc.modelContext?.listTools?.() || toolDefinitions,
+      listTools: () => document.modelContext?.listTools?.() || toolDefinitions,
     };
 
     return () => {

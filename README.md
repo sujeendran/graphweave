@@ -42,7 +42,7 @@ Software architecture diagrams and threat models suffer from a fundamental disco
 │                                  ▼                                      │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
 │   │                    WebMCP Host Bridge Hook                      │   │
-│   │                  (window.navigator.modelContext)                │   │
+│   │               (document.modelContext.registerTool)              │   │
 │   └──────────────────────────────┬──────────────────────────────────┘   │
 │                                  │ Dispatches Direct Action             │
 │                                  ▼                                      │
@@ -73,20 +73,50 @@ Software architecture diagrams and threat models suffer from a fundamental disco
 
 ## 🛠️ W3C WebMCP Protocol Tools & Resources
 
-GraphWeave exposes fine-grained client-side tools and live resources via `navigator.modelContext`:
+GraphWeave natively implements the **WebMCP (Web Model Context Protocol)** standard by exposing fine-grained architecture tools and live resources directly via **`document.modelContext.registerTool()`**:
 
-### 1. Tools Registered
+### Standard WebMCP Registration Pattern
+Each tool is registered imperatively on `document.modelContext` with standard schemas and abort lifecycle signals:
+
+```javascript
+// Exposing tools via document.modelContext.registerTool()
+document.modelContext.registerTool({
+  name: 'run_architecture_audit',
+  description: 'Execute the real-time Architecture Linter on the canvas to detect SPOFs, unencrypted channels, and compliance violations.',
+  inputSchema: {
+    type: 'object',
+    properties: {},
+  },
+  execute: async () => {
+    const report = getAuditReport();
+    return { content: [{ type: 'text', text: JSON.stringify(report, null, 2) }] };
+  },
+}, { signal: controller.signal });
+```
+
+### 1. Tools Registered via `document.modelContext.registerTool()`
 | Tool Name | Parameters | Purpose |
 | :--- | :--- | :--- |
+| `run_architecture_audit` | `{}` | Execute real-time Architecture Linter across canvas nodes & edges to detect SPOFs and plaintext risks. |
+| `auto_remediate_violation` | `violationId` | Autonomously execute architectural remediation (provision replicas, upgrade to mTLS, insert message queues). |
 | `add_service_node` | `id`, `label`, `serviceType`, `tier` | Spawn infrastructure components (gateway, compute, database, queue, cache, storage). |
-| `connect_services` | `sourceId`, `targetId`, `protocol`, `isEncrypted` | Establish directed network edge with protocol attributes (HTTPS, gRPC, RESP3, TCP). |
-| `flag_threat` | `nodeId`, `riskLevel`, `description`, `category` | Annotate services with STRIDE vulnerabilities (SPOF, Unencrypted, DDoS, Breach). |
+| `remove_service_node` | `nodeId` | Decommission a service node from the canvas and safely clean up all connected edges. |
+| `add_connection` | `sourceId`, `targetId`, `protocol`, `isEncrypted` | Establish directed network edge with protocol attributes (HTTPS, gRPC, PostgreSQL Wire, Redis, Kafka, TCP). |
+| `remove_connection` | `sourceId`, `targetId` | Sever a network communication link between two services. |
+| `flag_threat` | `nodeId`, `riskLevel`, `description`, `category` | Annotate services with STRIDE vulnerabilities (SPOF, Unencrypted, DDoS, Breach, Tampering, Chaos_Outage). |
+| `resolve_threat` | `nodeId`, `remediationNote` | Resolve identified threat on a node, restoring healthy compliance posture. |
+| `simulate_chaos_outage` | `nodeId`, `scenario` (`crash` \| `high_latency` \| `ddos`) | Simulate chaos engineering service outage and evaluate cascading dependency impacts across the graph. |
+| `reset_canvas` | `{}` | Reset visual canvas to a blank slate by clearing all nodes and connections. |
 | `apply_auto_layout` | `direction` (`LR` \| `TB`) | Trigger Dagre graph layout engine to balance and optimize node hierarchy. |
+| `get_topology_snapshot` | `{}` | Return complete architecture topology, node metadata, connections, and posture score. |
 
-### 2. Resource Registered
-- **URI:** `canvas://topology`
-- **MIME:** `application/json`
-- **Function:** Real-time snapshot of nodes, edges, unencrypted channels, and calculated security posture score (0-100) allowing agents to evaluate STRIDE compliance in real time.
+### 2. Live Resources Registered via `document.modelContext.registerResource()`
+| Resource URI | MIME Type | Purpose |
+| :--- | :--- | :--- |
+| `canvas://topology` | `application/json` | Real-time snapshot of nodes, edges, encrypted channels, and overall security posture score (0-100). |
+| `canvas://audit-report` | `application/json` | Structured report of current violations, severity counts, and automated remediation quick-fix actions. |
+
+*(For maximum compatibility across experimental agent runtimes and extensions, `document.modelContext` is also mirrored to `window.modelContext` and `navigator.modelContext`, with a standard-compliant polyfill installed if the browser environment does not natively expose it yet).*
 
 ---
 
